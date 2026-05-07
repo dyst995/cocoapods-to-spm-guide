@@ -1,15 +1,5 @@
 # Migrating iOS native dependencies from CocoaPods to Swift Package Manager (React Native)
 
-This guide is for teams that maintain React Native apps on iOS and need a **manual, step-by-step** path when an Apple library (or the Firebase Apple SDK) moves from **CocoaPods** to **Swift Package Manager (SPM)**. It complements official docs from [Firebase](https://firebase.google.com/docs/ios/cocoapods-deprecation) and library maintainers (for example [Invertase / React Native Firebase](https://github.com/invertase/react-native-firebase)).
-
-### Sample repository: Firebase works as intended; Kingfisher is only an SPM example
-
-In the sample project that accompanies this guide, **Firebase is wired the way React Native Firebase expects today**: `@react-native-firebase/app` brings in the Firebase Apple SDK through **CocoaPods** (for example `Firebase`, `FirebaseCore`, and related pods). That **CocoaPods-based Firebase integration is intentional and works as intended** in the sample—it validates autolinking, the Podfile adjustments sometimes required for Firebase Swift pods under React Native’s static linking, and a successful iOS build **without** moving Firebase to SPM.
-
-**Kingfisher is unrelated to Firebase** and was added **only as a teaching example**. [Kingfisher](https://github.com/onevcat/Kingfisher) is a **Swift library for downloading, caching, and displaying images** (similar in role to other iOS image loaders). It is distributed via both [CocoaPods](https://cocoapods.org/pods/Kingfisher) and **SPM**; the sample adds it **through SPM alone** so you can prove that **SPM and CocoaPods can live in the same Xcode workspace** next to React Native and RNFB. If you do not need image loading in your app, you may remove Kingfisher and use any other neutral library that supports both Pod and SPM for the same kind of demonstration.
-
----
-
 ## Table of contents
 
 1. [Sample repository: Firebase works as intended; Kingfisher is only an SPM example](#sample-repository-firebase-works-as-intended-kingfisher-is-only-an-spm-example)
@@ -27,6 +17,16 @@ In the sample project that accompanies this guide, **Firebase is wired the way R
 
 ---
 
+This guide is for teams that maintain React Native apps on iOS and need a **manual, step-by-step** path when an Apple library (or the Firebase Apple SDK) moves from **CocoaPods** to **Swift Package Manager (SPM)**. It complements official docs from [Firebase](https://firebase.google.com/docs/ios/cocoapods-deprecation) and library maintainers (for example [Invertase / React Native Firebase](https://github.com/invertase/react-native-firebase)).
+
+### Sample repository: Firebase works as intended; Kingfisher is only an SPM example
+
+In the sample project that accompanies this guide, **Firebase is wired the way React Native Firebase expects today**: `@react-native-firebase/app` brings in the Firebase Apple SDK through **CocoaPods** (for example `Firebase`, `FirebaseCore`, and related pods). That **CocoaPods-based Firebase integration is intentional and works as intended** in the sample—it validates autolinking, the Podfile adjustments sometimes required for Firebase Swift pods under React Native’s static linking, and a successful iOS build **without** moving Firebase to SPM.
+
+**Kingfisher is unrelated to Firebase** and was added **only as a teaching example**. [Kingfisher](https://github.com/onevcat/Kingfisher) is a **Swift library for downloading, caching, and displaying images** (similar in role to other iOS image loaders). It is distributed via both [CocoaPods](https://cocoapods.org/pods/Kingfisher) and **SPM**; the sample adds it **through SPM alone** so you can prove that **SPM and CocoaPods can live in the same Xcode workspace** next to React Native and RNFB. If you do not need image loading in your app, you may remove Kingfisher and use any other neutral library that supports both Pod and SPM for the same kind of demonstration.
+
+---
+
 ## Why this matters (Firebase and October 2026)
 
 Google has documented a move away from publishing **new** Firebase Apple SDK versions via CocoaPods, with SPM as a recommended install path. See [Migrate from CocoaPods](https://firebase.google.com/docs/ios/cocoapods-deprecation) for the authoritative timeline and FAQ.
@@ -37,10 +37,10 @@ Google has documented a move away from publishing **new** Firebase Apple SDK ver
 
 ## Concepts: two layers in a React Native iOS app
 
-| Layer | What it is | Typical tool today |
-|--------|------------|-------------------|
-| **JS / npm** | `react-native-screens`, `@react-native-firebase/app`, etc. | `package.json`, Metro |
-| **Native iOS** | Compiled code Xcode links into the app | CocoaPods (autolinking) + sometimes SPM |
+| Layer          | What it is                                                 | Typical tool today                      |
+| -------------- | ---------------------------------------------------------- | --------------------------------------- |
+| **JS / npm**   | `react-native-screens`, `@react-native-firebase/app`, etc. | `package.json`, Metro                   |
+| **Native iOS** | Compiled code Xcode links into the app                     | CocoaPods (autolinking) + sometimes SPM |
 
 **Important:** migrating “the library” on iOS usually means changing the **native** integration (Podfile, Xcode package dependencies, build settings). Running `npm update` alone is not enough if the native side still pulls an old Pod.
 
@@ -339,15 +339,15 @@ If another pod names a different Obj-C dependency in the error, apply `:modular_
 
 Run through this list after any Pod or SPM change.
 
-| # | Check |
-|---|--------|
-| 1 | `cd ios && bundle exec pod install` exits **0**. |
-| 2 | Xcode resolves packages with **no** warnings you do not understand. |
-| 3 | **Debug** build on a simulator succeeds. |
-| 4 | **Release** build succeeds (different optimizations). |
-| 5 | **Archive** (or CI export) succeeds if you ship to TestFlight. |
-| 6 | No **duplicate symbol** errors in the full link log. |
-| 7 | Critical user flows touching native code (push, analytics, screens) are smoke-tested. |
+| #   | Check                                                                                 |
+| --- | ------------------------------------------------------------------------------------- |
+| 1   | `cd ios && bundle exec pod install` exits **0**.                                      |
+| 2   | Xcode resolves packages with **no** warnings you do not understand.                   |
+| 3   | **Debug** build on a simulator succeeds.                                              |
+| 4   | **Release** build succeeds (different optimizations).                                 |
+| 5   | **Archive** (or CI export) succeeds if you ship to TestFlight.                        |
+| 6   | No **duplicate symbol** errors in the full link log.                                  |
+| 7   | Critical user flows touching native code (push, analytics, screens) are smoke-tested. |
 
 **Command-line package resolution (useful for CI):**
 
