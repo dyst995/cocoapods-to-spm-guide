@@ -8,7 +8,7 @@ This document focuses on migrating individual native Apple SDKs from CocoaPods t
 
 ## Cursor Agent skill
 
-A **Cursor Agent skill** (condensed workflow + troubleshooting) for this topic lives in [`.cursor/skills/rn-ios-cocoapods-spm-migration/SKILL.md`](.cursor/skills/rn-ios-cocoapods-spm-migration/SKILL.md). The long-form guide remains in [`docs/ios-cocoapods-to-spm-migration.md`](docs/ios-cocoapods-to-spm-migration.md).
+A **Cursor Agent skill** (general Pod → SPM migration and troubleshooting for React Native iOS, any library) lives in [`.cursor/skills/rn-ios-cocoapods-spm-migration/SKILL.md`](.cursor/skills/rn-ios-cocoapods-spm-migration/SKILL.md). The long-form guide with **worked examples** (Firebase, sample stack, Kingfisher) is in [`docs/ios-cocoapods-to-spm-migration.md`](docs/ios-cocoapods-to-spm-migration.md).
 
 ## Visual architecture diagram
 

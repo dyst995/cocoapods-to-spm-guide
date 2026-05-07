@@ -388,4 +388,4 @@ For production use of React Native Firebase, add **`GoogleService-Info.plist`** 
 - [Firebase: Options to install Firebase (SPM)](https://firebase.google.com/docs/ios/installation-methods)
 - [React Native Firebase issue tracker (SPM / CocoaPods timeline)](https://github.com/invertase/react-native-firebase/issues/9010)
 - [Kingfisher installation (CocoaPods vs SPM)](https://github.com/onevcat/Kingfisher)
-- **Cursor:** condensed Agent skill in this repo at [`.cursor/skills/rn-ios-cocoapods-spm-migration/SKILL.md`](../.cursor/skills/rn-ios-cocoapods-spm-migration/SKILL.md)
+- **Cursor:** vendor-agnostic Agent skill (Pod → SPM migration and troubleshooting) at [`.cursor/skills/rn-ios-cocoapods-spm-migration/SKILL.md`](../.cursor/skills/rn-ios-cocoapods-spm-migration/SKILL.md)

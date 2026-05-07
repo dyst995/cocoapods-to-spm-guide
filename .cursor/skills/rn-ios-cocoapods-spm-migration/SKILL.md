@@ -1,84 +1,85 @@
 ---
 name: rn-ios-cocoapods-spm-migration
 description: >-
-  Migrates or plans migration of React Native iOS native dependencies from CocoaPods
-  to Swift Package Manager (SPM), including hybrid Pods+SPM setups, Firebase Apple SDK
-  timeline context, @react-native-firebase and react-native-screens notes, duplicate-symbol
-  avoidance, Podfile modular headers for Firebase Swift pods, CI Package.resolved, and
-  verification. Use when the user works on iOS Podfile, Xcode package dependencies,
-  RNFirebase, Firebase CocoaPods deprecation, SPM coexistence, or manual Pod-to-SPM steps.
+  Plans or debugs migrating iOS native dependencies from CocoaPods to Swift Package
+  Manager (SPM) in React Native apps: hybrid Pods+SPM, autolinking vs direct pods,
+  duplicate-symbol avoidance, transitive deps, modular headers / static linkage,
+  SPM target linking, CI and Package.resolved, and verification. Use when the user
+  touches ios/Podfile, Podfile.lock, Xcode Package Dependencies, duplicate symbols,
+  “could not build module”, SPM resolution failures, or any library’s Pod-to-SPM move.
 disable-model-invocation: false
 ---
 
 # React Native iOS: CocoaPods ↔ Swift Package Manager
 
-## Scope
+## What this skill is for
 
-- **React Native** apps using **`ios/*.xcworkspace`** + CocoaPods (autolinking).
-- **Coexistence:** CocoaPods for RN and most native modules; SPM for selected Swift packages on the app target.
-- **Firebase:** treat [official CocoaPods migration doc](https://firebase.google.com/docs/ios/cocoapods-deprecation) and **React Native Firebase** release notes / [issue #9010](https://github.com/invertase/react-native-firebase/issues/9010) as source of truth for timeline and supported layouts.
+- **Migrating** a specific native library from a **Pod** to an **SPM** product (when the vendor supports both).
+- **Diagnosing** build and link failures after Pod / SPM / Xcode changes—without assuming a particular vendor (analytics, DB, UI, networking, etc.).
+- **React Native context:** most apps still use **`ios/*.xcworkspace`** + CocoaPods for the core stack and autolinked modules; SPM is usually added **on top** for chosen packages.
 
-## Long-form reference
+## Long-form narrative
 
-Full step-by-step guide, obstacle catalog, and sample-repo explanation: [reference.md](reference.md).
+Repo guide (phases, obstacles, examples): [reference.md](reference.md).
 
-## Core concepts
+## Layers (where to look)
 
-| Layer | Typical location |
-|-------|------------------|
-| JS | `package.json`, Metro |
-| Native iOS | `ios/Podfile`, Xcode **Package Dependencies**, `project.pbxproj`, `Package.resolved` |
+| Concern | Where |
+|--------|--------|
+| JS package version | `package.json` |
+| Native module wiring | npm package **podspec**, autolinking, `ios/Podfile` / `Podfile.lock` |
+| SPM | Xcode **Package Dependencies**, `project.pbxproj`, `**/swiftpm/Package.resolved` |
 
-`npm update` alone does not migrate native iOS; **Podfile / Xcode** must match.
+Changing only npm does **not** migrate native iOS if Pods or Xcode packages still pull the old binary.
 
-## Critical rules
+## Critical rules (any library)
 
-1. **Never link the same native SDK twice** (e.g. Firebase via **both** RNFB’s CocoaPods **and** SPM Firebase products) unless upstream docs explicitly support it. Expect **duplicate symbol** / runtime issues otherwise.
-2. **Always open `ios/*.xcworkspace`**, not the bare `.xcodeproj`, when using CocoaPods.
-3. **Firebase via RNFB today:** usually **CocoaPods** transitive pods (`Firebase/CoreOnly`, etc.). A **neutral** SPM library (e.g. Kingfisher for image loading) may be used only to **prove** SPM + Pods coexist—it is **not** part of Firebase migration.
-4. **`react-native-screens`:** consume via **podspec / autolinking**; app authors typically do **not** “migrate screens to SPM” unless maintainers document it.
+1. **One supplier per native SDK.** Do not link the **same** compiled library twice (e.g. once via Pods and again via SPM) unless upstream documents that split. Symptom: **duplicate symbol** at link time or unstable runtime.
+2. **Use the workspace.** With CocoaPods, open **`ios/*.xcworkspace`**, not the bare `.xcodeproj`.
+3. **Know direct vs transitive.** If `Podfile.lock` shows the pod only as a **dependency of another pod**, you cannot drop it by deleting your own `pod` line—you must upgrade/replace the **parent** or wait for maintainers.
+4. **Map Pod names to SPM products.** Subspecs and SPM **product** names often differ; read the library’s SPM README.
 
-## Pre-migration audit (do first)
+## Audit before changing anything
 
-- **A1:** `Podfile` + `Podfile.lock` — is the dependency **direct** or **transitive**? If only transitive, you cannot drop it without changing the parent pod / upgrading the library.
-- **A2:** Map CocoaPods **subspecs** to SPM **product** names (they often differ).
-- **A3:** SPM minimum **iOS** vs app deployment target.
-- **A4:** CI: same **Xcode** major as local; commit **`Package.resolved`**; run **`xcodebuild -resolvePackageDependencies`** or full build on CI.
+- **A1:** Grep `Podfile` and `Podfile.lock` for the library; note **direct** vs **transitive** owners.
+- **A2:** List exact **SPM products** and version rules from the vendor; match to previous Pod subspecs.
+- **A3:** Compare package **minimum iOS** (and Swift tools) to the app target and `platform :ios` in the Podfile.
+- **A4:** CI must use a comparable **Xcode** version; commit **`Package.resolved`** when the team locks SPM versions; ensure CI runs package resolution (`xcodebuild -resolvePackageDependencies` or a full build).
 
-## Manual flow: move one library from Pod → SPM
+## Manual flow: move one library Pod → SPM
 
-1. Remove `pod 'Lib', …` from `Podfile` (if you own it); `cd ios && bundle exec pod install`; confirm build from **workspace**.
-2. Xcode: **Project → Package Dependencies → +** → Git URL from library README → version rule → add **product** to **app** (and extensions if needed).
-3. `import Lib` in Swift; **Clean Build Folder**; fix “No such module” by ensuring the SPM product is on the target.
-4. Commit `project.pbxproj` and `**/swiftpm/Package.resolved`.
+1. Remove the **`pod '…'`** line you control (if any); run `cd ios && bundle exec pod install`; build from the **workspace** as a baseline.
+2. Xcode: **Project → Package Dependencies → +** → vendor Git URL → rule → attach **products** to the **app** target (and app extensions that need them).
+3. Fix imports (`import ModuleName` in Swift; follow vendor for Obj-C / `.mm`).
+4. **Clean Build Folder**; if `No such module`, re-check target membership for the SPM product.
+5. Commit `project.pbxproj` and `Package.resolved` paths Xcode updates.
 
-## Firebase-specific (when upstream documents SPM)
+## Symptom → likely cause → what to try
 
-1. Read RNFB changelog + Firebase install docs for **your** major versions.
-2. Align **npm** `@react-native-firebase/*` versions; `pod install`.
-3. Apply **only** documented native changes (Pods removal vs SPM add).
-4. Verify **no duplicate** Firebase in the link step.
+| Symptom | Likely cause | What to try |
+|--------|----------------|------------|
+| Duplicate symbol `_OBJC_CLASS_$_…` / same vendor prefix twice | Same static code linked from **Pod + SPM** (or two Pods) | Remove one integration path; `pod install`; inspect **Link Binary** / build log for duplicate `.a` / frameworks. |
+| Swift / “does not define modules” / static library | Obj-C pod lacks module map; RN often uses **static** linkage | In `Podfile`, `:modular_headers => true` on the **pod named in the error** (often a low-level util pod). Avoid blanket `use_modular_headers!` unless the team accepts side effects. |
+| `No such module 'X'` (SPM) | Product not linked to target | Target → Frameworks / SPM product list; re-add package product to correct target. |
+| Package resolve fails | URL, auth, or version rule | Fix URL and token/SSH for private repos; relax or pin version; align Xcode with local. |
+| Build OK locally, fails on CI | Missing resolve / wrong Xcode | Commit `Package.resolved`; pin Xcode; run `xcodebuild -resolvePackageDependencies` in CI. |
+| Opens `.xcodeproj` and Pods missing | Wrong entry point | Always **`*.xcworkspace`**. |
+| Errors after toggling New Architecture | Native module / Swift interop | Treat as **integration** issue: align RN, native modules, and vendor pods; check issue trackers for the **specific** modules in the stack. |
 
-## Common obstacles (symptom → fix)
+## Ecosystem-specific (only when relevant)
 
-| Symptom | Likely fix |
-|--------|------------|
-| Swift pod + static libs / “does not define modules” / `GoogleUtilities` | In `Podfile` target, before `use_react_native!`: `pod 'GoogleUtilities', :modular_headers => true` (or the pod named in the error). Avoid global `use_modular_headers!` unless team accepts blast radius. |
-| Duplicate `FIR*` / Firebase symbols | Remove duplicate source: one of SPM vs Pods for Firebase. |
-| `No such module` for SPM | Link SPM product to correct target; clean / DerivedData. |
-| CI resolves Pods but not SPM | Add `xcodebuild -resolvePackageDependencies` or full build. |
-| Wrong project opened | Use `.xcworkspace`. |
+- **Wrappers (e.g. RN bindings)** often still ship **podspecs**; the app author migrates **underlying** Apple SDKs only when the **wrapper’s** docs say so. Do not add SPM for an SDK that the wrapper still pulls via CocoaPods unless documented—see **duplicate symbol** row.
+- **High-churn SDKs** (e.g. some Google / Firebase Apple SDKs) may publish **timeline** or install-method docs; use the **vendor’s** official migration page for that product, not generic guesses.
 
-## Verification checklist
+## Verification
 
-- [ ] `bundle exec pod install` **0**
-- [ ] Debug + **Release** build; **Archive** if shipping
-- [ ] No duplicate symbols in link log
-- [ ] Smoke-test flows using affected native code
-- [ ] Production Firebase: **`GoogleService-Info.plist`** on app target, `firebase.json` if using RNFB config
+- [ ] `bundle exec pod install` succeeds.
+- [ ] **Debug** and **Release** builds; **Archive** if you ship to the store.
+- [ ] Link log free of **duplicate symbol** for the migrated library.
+- [ ] Smoke-test code paths that call into the native library.
 
-## Official links
+## Reference links (general)
 
-- [Firebase: Migrate from CocoaPods](https://firebase.google.com/docs/ios/cocoapods-deprecation)
-- [Firebase: Installation methods (SPM)](https://firebase.google.com/docs/ios/installation-methods)
-- [RNFirebase SPM / CocoaPods tracking](https://github.com/invertase/react-native-firebase/issues/9010)
+- [Swift Package Manager (Apple)](https://www.swift.org/package-manager/)
+- [Adding package dependencies to an app (Xcode)](https://developer.apple.com/documentation/xcode/adding-package-dependencies-to-your-app) (concept; UI may vary by Xcode version)
+- [CocoaPods guides](https://guides.cocoapods.org/using/getting-started.html)

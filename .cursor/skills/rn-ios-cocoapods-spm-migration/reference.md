@@ -1,7 +1,9 @@
 # Long-form guide (this repository)
 
-The canonical manual—phased Pod → SPM steps, Firebase future migration pattern, library-specific notes, and full obstacle section—is maintained at:
+The **skill** ([SKILL.md](SKILL.md)) stays **vendor-agnostic**: any Pod → SPM move and common failure modes.
 
-**[docs/ios-cocoapods-to-spm-migration.md](../../../docs/ios-cocoapods-to-spm-migration.md)** (path relative to repo root: `docs/ios-cocoapods-to-spm-migration.md`).
+The **canonical manual** in this repo adds narrative, step-by-step phases, and **concrete examples** (Firebase timeline, `react-native-screens`, Kingfisher hybrid demo, Podfile snippets). It lives at:
 
-Read that file when the user needs narrative detail, copy-paste checklists, or documentation to publish outside Cursor.
+**[docs/ios-cocoapods-to-spm-migration.md](../../../docs/ios-cocoapods-to-spm-migration.md)** (repo root: `docs/ios-cocoapods-to-spm-migration.md`).
+
+Read that file when the user needs full checklists, copy-paste flows, or documentation to publish outside Cursor.
